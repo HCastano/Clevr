@@ -33,6 +33,10 @@ contract ClevrPosts {
   // Need an event for when posts are posted
   // event NewPOst()
 
+  modifier validHash(bytes32 _hash) {
+    require(_hash[0] != 0);
+    _;
+  }
 
   // TODO: Do something with owner 
   function ClevrPosts() {
@@ -40,7 +44,7 @@ contract ClevrPosts {
   }
   
   function cascadeLikes(bytes32 _hash) returns(bool){
-    bytes32 parentIncrementer ;
+    bytes32 parentIncrementer;
     parentIncrementer = _hash;
     
     while (parentIncrementer!=0){
@@ -61,11 +65,12 @@ contract ClevrPosts {
     return true;
   }
    
-  function incrementLikes(bytes32 _hash) returns(bytes32){
-      posts[_hash].numLikes +=1;
-      return parent_hashes[_hash];
+  function incrementLikes(bytes32 _hash) validHash(_hash) returns(bytes32){
+    posts[_hash].numLikes +=1;
+    return parent_hashes[_hash];
   }
-  function incrementShares(bytes32 _hash) returns(bytes32){
+
+  function incrementShares(bytes32 _hash) validHash(_hash) returns(bytes32){
       posts[_hash].numShares +=1;
       return parent_hashes[_hash];
   }
@@ -74,9 +79,9 @@ contract ClevrPosts {
                    uint8 _hashFunction,
                    uint8 _size,
                    bytes32 _parentHash)
+                   validHash(_hash)
                    returns (bool) {
 
-    require(_hash[0] != 0);
     require(_hashFunction  != 0);
     require(_size != 0);
 
