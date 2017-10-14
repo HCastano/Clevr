@@ -1,4 +1,4 @@
-pragma solidity 0.4.15;
+pragma solidity 0.4.17;
 
 contract ClevrPosts {
 
@@ -20,7 +20,7 @@ contract ClevrPosts {
   address public owner;
 
   // Map hash to parent post
-  mapping(bytes32 => Post) parents;
+  mapping(bytes32 => bytes32) parent_hashes;
 
 
   // Map content hashes to posts
@@ -33,6 +33,37 @@ contract ClevrPosts {
   // TODO: Do something with owner 
   function ClevrPosts() {
     owner = msg.sender;
+  }
+  
+  function cascadeLikes(bytes32 _hash) returns(bool){
+    bytes32 parentIncrementer ;
+    parentIncrementer = _hash;
+    
+    while (parentIncrementer!=0){
+            parentIncrementer = incrementLikes(parentIncrementer);
+    }
+    
+    return true;
+  }
+  
+  function cascadeShares(bytes32 _hash) returns(bool){
+    bytes32 parentIncrementer ;
+    parentIncrementer = _hash;
+    
+    while (parentIncrementer!=0){
+            parentIncrementer = incrementShares(parentIncrementer);
+    }
+    
+    return true;
+  }
+   
+  function incrementLikes(bytes32 _hash) returns(bytes32){
+      posts[_hash].numLikes +=1;
+      return parent_hashes[_hash];
+  }
+  function incrementShares(bytes32 _hash) returns(bytes32){
+      posts[_hash].numShares +=1;
+      return parent_hashes[_hash];
   }
 
   function createPost(bytes32 _hash, 
@@ -59,24 +90,26 @@ contract ClevrPosts {
     newPost.numShares = 0;
 
     posts[newMultihash.hash] = newPost;
+    parent_hashes[_hash] = _parentHash;
+    if (_parentHash != 0){
+        cascadeShares(_parentHash);
+        
+    }
 
     return true;
   }
 
   // Passing in the child hash
-  function getParents(bytes32 _hash) 
-  returns(
-    uint256,
+  function getParent(bytes32 _hash)  returns(uint256,
     address,
     uint256,
-    uint256,
-    bytes32) {
-
-     return(parents[_hash].timePosted,
-            parents[_hash].publisher,
-            parents[_hash].numLikes,
-            parents[_hash].numShares,
-            parents[_hash].contentHash.hash);
+    uint256){
+    return getPosts(getParentHash(_hash));
+    
+  }
+  function getParentHash(bytes32 _hash)  returns(bytes32){
+    return parent_hashes[_hash];
+    
   }
 
   function getPosts(bytes32 _hash) returns(
