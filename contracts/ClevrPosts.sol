@@ -15,6 +15,7 @@ contract ClevrPosts {
     address publisher;
     uint256 numLikes;// Think of changing to original name?
     uint256 numShares;
+    bytes32 prevPost; // hash of the next post
   }
 
   address public owner;
@@ -25,6 +26,9 @@ contract ClevrPosts {
 
   // Map content hashes to posts
   mapping(bytes32 => Post) posts;
+  
+  // Map content addreses to posts
+  mapping(address => Post) userPosts;
 
   // Need an event for when posts are posted
   // event NewPOst()
@@ -88,9 +92,11 @@ contract ClevrPosts {
     newPost.publisher = msg.sender;
     newPost.numLikes = 0;
     newPost.numShares = 0;
-
     posts[newMultihash.hash] = newPost;
     parent_hashes[_hash] = _parentHash;
+    newPost.prevPost =  userPosts[msg.sender].contentHash.hash;
+    userPosts[msg.sender] = newPost;
+    
     if (_parentHash != 0){
         cascadeShares(_parentHash);
         
@@ -100,27 +106,42 @@ contract ClevrPosts {
   }
 
   // Passing in the child hash
-  function getParent(bytes32 _hash)  returns(uint256,
+  function getParent(bytes32 _hash)  returns
+  (uint256,
     address,
     uint256,
-    uint256){
-    return getPosts(getParentHash(_hash));
+    uint256,
+    bytes32){
+    return getPost(getParentHash(_hash));
     
   }
   function getParentHash(bytes32 _hash)  returns(bytes32){
     return parent_hashes[_hash];
     
   }
+  // last post
+  function getPostForUser(address _userAddress) returns 
+  ( uint256,
+    address,
+    uint256,
+    uint256,
+    bytes32)
+    {
+      Post post = userPosts[_userAddress];
+      return (post.timePosted,post.publisher,post.numLikes,post.numShares,post.prevPost);
+  }
 
-  function getPosts(bytes32 _hash) returns(
+  function getPost(bytes32 _hash) returns(
     uint256,
     address,
     uint256,
-    uint256) {
+    uint256,
+    bytes32) {
 
      return(posts[_hash].timePosted,
             posts[_hash].publisher,
             posts[_hash].numLikes,
-            posts[_hash].numShares);
+            posts[_hash].numShares,
+            posts[_hash].prevPost);
     }
 }
