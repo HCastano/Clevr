@@ -79,5 +79,15 @@ contract ClevrPosts {
             parents[_hash].contentHash.hash);
   }
 
-  function getPosts() {}
+  function getPosts(bytes32 _hash) returns(
+    uint256,
+    address,
+    uint256,
+    uint256) {
+
+     return(posts[_hash].timePosted,
+            posts[_hash].publisher,
+            posts[_hash].numLikes,
+            posts[_hash].numShares);
+    }
 }
