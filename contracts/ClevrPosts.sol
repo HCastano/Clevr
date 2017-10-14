@@ -19,7 +19,7 @@ contract ClevrPosts {
 
   address public owner;
 
-  // Map address to parent post
+  // Map hash to parent post
   mapping(bytes32 => Post) parents;
 
 
@@ -63,7 +63,21 @@ contract ClevrPosts {
     return true;
   }
 
-  function getParents() {}
+  // Passing in the child hash
+  function getParents(bytes32 _hash) 
+  returns(
+    uint256,
+    address,
+    uint256,
+    uint256,
+    bytes32) {
+
+     return(parents[_hash].timePosted,
+            parents[_hash].publisher,
+            parents[_hash].numLikes,
+            parents[_hash].numShares,
+            parents[_hash].contentHash.hash);
+  }
 
   function getPosts() {}
 }
