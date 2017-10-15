@@ -86,6 +86,7 @@ contract ClevrPosts {
   // Compute costGrowthRate for each post  
   function cascadeShares(bytes32 _hash) returns(uint){
    
+    address[] creatorsToPay;
     bytes32 parentHash = _hash;
     uint256 parentIncrementer = 0;
 
@@ -165,9 +166,9 @@ contract ClevrPosts {
     newPost.publisher = msg.sender;
     newPost.numLikes = 0;
     newPost.numShares = 0;
+
     newPost.costToLike = _costToLike;
     newPost.costToShare = _costToShare;
-
     posts[newMultihash.hash] = newPost;
     parent_hashes[_hash] = _parentHash;
 
@@ -182,7 +183,7 @@ contract ClevrPosts {
     // Only keeps the most recent pposts
     // Others are related via prevPost
     userPosts[msg.sender] = newPost;
-        LogStuff("Before hash");
+    LogStuff("Before hash");
 
     uint256 shares; 
     if (_parentHash != 0) {
@@ -194,6 +195,8 @@ contract ClevrPosts {
         LogStuff("Peopl are getting paid...");
         // payShares(_hash, 100);
     }
+
+    // Pay for the shares
 
     return true;
   }
