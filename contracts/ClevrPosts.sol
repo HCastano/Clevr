@@ -99,7 +99,13 @@ contract ClevrPosts {
     newPost.numShares = 0;
     posts[newMultihash.hash] = newPost;
     parent_hashes[_hash] = _parentHash;
-    newPost.prevPost =  userPosts[msg.sender].contentHash.hash;
+
+    if (userPosts[msg.sender] != 0) {
+      newPost.prevPost =  userPosts[msg.sender].contentHash.hash;
+    } else {
+      newPost.prevPost = '0';
+    }
+
     userPosts[msg.sender] = newPost;
     
     if (_parentHash != 0){
