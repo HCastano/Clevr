@@ -218,10 +218,13 @@ contract ClevrPosts {
     address,
     uint256,
     uint256,
+    bytes32,
     bytes32)
     {
       Post post = userPosts[_userAddress];
-      return (post.timePosted,post.publisher,post.numLikes,post.numShares,post.prevPost);
+      return
+      (post.timePosted,post.publisher,post.numLikes,post.numShares,post.prevPost,
+      post.contentHash.hash);
   }
 
   function getPost(bytes32 _hash) returns(
