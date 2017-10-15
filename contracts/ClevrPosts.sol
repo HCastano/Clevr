@@ -13,9 +13,15 @@ contract ClevrPosts {
     Multihash contentHash;
     uint256 timePosted;
     address publisher;
+    bytes32 prevPost; // hash of the next post
+
     uint256 numLikes;// Think of changing to original name?
     uint256 numShares;
-    bytes32 prevPost; // hash of the next post
+
+    uint256 costToLike;
+    uint256 costToShare;
+
+    uint256 costGrowthRate;
   }
 
   address public owner;
@@ -42,35 +48,56 @@ contract ClevrPosts {
   function ClevrPosts() {
     owner = msg.sender;
   }
+
   
-  function cascadeLikes(bytes32 _hash) returns(bool){
-    bytes32 parentIncrementer;
-    parentIncrementer = _hash;
-    
-    while (parentIncrementer!=0){
-            parentIncrementer = incrementLikes(parentIncrementer);
+  function cascadeLikes(bytes32 _hash) payable returns(bool){
+    require(msg.value == post[_hash].costToLike);
+
+    uint256 amtLeft = msg.value;
+
+    address[] creatorsToPay;
+    uint256[] growthRates;
+
+    bytes32 parentHash = _hash;
+    uint256 parentIncrementer = 0;
+
+    while (parentHash != 0) {
+      creatorsToPay[parentIncrementer] = posts[parentHash].publisher;
+      growthRates[parentIncrementer++] = posts[parentHash].costGrowthRate;
+
+      parentHash = incrementLikes(parentHash);
     }
-    
+
+    for(uint i = 0; i < creatorsToPay.length; i++) {
+      assert(this.balance >= amtLeft);
+      creatorsToPay[i].transfer(post[i].costToLike * growthRates[i]);
+    }
+
     return true;
   }
-  
-  function cascadeShares(bytes32 _hash) returns(bool){
-    bytes32 parentIncrementer ;
-    parentIncrementer = _hash;
-    
-    while (parentIncrementer!=0){
-            parentIncrementer = incrementShares(parentIncrementer);
+
+
+  // Compute costGrowthRate for each post  
+  function cascadeShares(bytes32 _hash) returns(uint){
+    address[] creatorsToPay;
+    bytes32 parentHash = _hash;
+    uint256 parentIncrementer = 0;
+
+    while (parentHash != 0) {
+      creatorsToPay[parentIncrementer++] = posts[parentHash].publisher;
+      parentHash = incrementShares(parentHash);
     }
-    
-    return true;
+
+    return parentIncrementer;
   }
    
-  function incrementLikes(bytes32 _hash) validHash(_hash) returns(bytes32){
+  function incrementLikes(bytes32 _hash) validHash(_hash) internal returns(bytes32){
+
     posts[_hash].numLikes +=1;
     return parent_hashes[_hash];
   }
 
-  function incrementShares(bytes32 _hash) validHash(_hash) returns(bytes32){
+  function incrementShares(bytes32 _hash) validHash(_hash) internal returns(bytes32){
       posts[_hash].numShares +=1;
       return parent_hashes[_hash];
   }
@@ -97,6 +124,7 @@ contract ClevrPosts {
     newPost.publisher = msg.sender;
     newPost.numLikes = 0;
     newPost.numShares = 0;
+
     posts[newMultihash.hash] = newPost;
     parent_hashes[_hash] = _parentHash;
 
@@ -107,11 +135,14 @@ contract ClevrPosts {
     }
 
     userPosts[msg.sender] = newPost;
-    
-    if (_parentHash != 0){
-        cascadeShares(_parentHash);
-        
+
+    uint256 shares; 
+    if (_parentHash != 0) {
+        shares = cascadeShares(_parentHash);
+        newPost.costGrowthRate = 1024 / (2 ** shares);
     }
+
+    // Pay for the shares
 
     return true;
   }
